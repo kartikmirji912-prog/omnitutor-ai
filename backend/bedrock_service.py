@@ -1,51 +1,70 @@
 
-import json
 import os
+import sys
+from pathlib import Path
 
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
+from dotenv import load_dotenv
+from google import genai
+from google.genai import errors
 
+# Load the API key from backend/.env
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
-def get_bedrock_client():
-    """Create a Bedrock Runtime client using standard AWS credentials."""
-    region = os.getenv("AWS_REGION", "us-east-1")
-
-    return boto3.client(
-        "bedrock-runtime",
-        region_name=region,
-    )
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 
 def generate_answer(prompt: str) -> str:
-    """Generate a response using an Amazon Bedrock model."""
-    model_id = os.getenv(
-        "BEDROCK_MODEL_ID",
-        "anthropic.claude-3-haiku-20240307-v1:0",
-    )
+    """Generate an answer using Google Gemini."""
+
+    if not GEMINI_API_KEY:
+        print(
+            "ERROR: GEMINI_API_KEY is missing from backend/.env",
+            file=sys.stderr,
+            flush=True,
+        )
+        return "Gemini API key is missing. Check backend/.env."
 
     try:
-        client = get_bedrock_client()
+        client = genai.Client(api_key=GEMINI_API_KEY)
 
-        response = client.converse(
-            modelId=model_id,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [{"text": prompt}],
-                }
-            ],
-            inferenceConfig={
-                "maxTokens": 600,
-                "temperature": 0.5,
-            },
+        try:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+            )
+            answer = (response.text or "").strip()
+
+            if answer:
+                return answer
+
+            print(
+                "Gemini returned an empty response.",
+                file=sys.stderr,
+                flush=True,
+            )
+            return "Gemini returned an empty response. Please try again."
+
+        finally:
+            client.close()
+
+    except errors.APIError as exc:
+        # Do not print or expose the API key.
+        print(
+            f"Gemini API error (HTTP {getattr(exc, 'code', 'unknown')}): {exc}",
+            file=sys.stderr,
+            flush=True,
         )
-
-        return response["output"]["message"]["content"][0]["text"]
-
-    except (BotoCoreError, ClientError) as exc:
-        print(f"Bedrock request failed: {type(exc).__name__}")
         return (
-            "Amazon Bedrock is not available right now. "
-            "Please check your AWS credentials, region, model access, "
-            "and permissions."
+            "Gemini API request failed. Check the backend terminal "
+            "for the error details."
         )
+
+    except Exception as exc:
+        print(
+            f"Unexpected Gemini error: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return "Could not connect to Gemini. Check the backend terminal."

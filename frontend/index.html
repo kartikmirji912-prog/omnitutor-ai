@@ -1,247 +1,995 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OmniTutor AI – Alexa+ MCP Simulator</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniTutor AI — Your AI Learning Companion</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    @keyframes pulse-ring {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7); }
-      70% { transform: scale(1.05); box-shadow: 0 0 0 25px rgba(14, 165, 233, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+    body {
+      background: #070b16;
+      color: #e2e8f0;
+      font-family: Inter, system-ui, sans-serif;
     }
-    .alexa-glow {
-      animation: pulse-ring 2.5s infinite;
+
+    .panel {
+      background: rgba(15, 23, 42, .92);
+      border: 1px solid #263449;
+    }
+
+    .message {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .action {
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background .2s;
+    }
+
+    .primary {
+      background: #6366f1;
+      color: white;
+    }
+
+    .primary:hover:not(:disabled) {
+      background: #4f46e5;
+    }
+
+    .secondary {
+      background: #111827;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+    }
+
+    .secondary:hover:not(:disabled) {
+      background: #1e293b;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .choice {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      background: #0b1220;
+      color: #e2e8f0;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .choice:hover:not(:disabled) {
+      border-color: #818cf8;
+      background: #172036;
+    }
+
+    .choice.selected {
+      border-color: #818cf8;
+      background: #24254b;
+    }
+
+    .choice.correct {
+      border-color: #34d399;
+      background: #063b30;
+    }
+
+    .choice.incorrect {
+      border-color: #fb7185;
+      background: #451a27;
+    }
+
+    .choice:disabled {
+      opacity: 1;
+      cursor: default;
+    }
+
+    input[type="checkbox"] {
+      accent-color: #818cf8;
+    }
+
+    #chatFeed {
+      scrollbar-width: thin;
+      scrollbar-color: #334155 transparent;
+    }
+
+    .code-block {
+      white-space: pre;
+      overflow-x: auto;
+      overflow-wrap: normal;
+      tab-size: 4;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
-  <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-      <div class="w-9 h-9 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 font-bold text-lg">α</div>
-      <div>
-        <h1 class="text-lg font-bold text-white tracking-wide">OmniTutor AI</h1>
-        <p class="text-xs text-cyan-400">Alexa+ Simulated MCP Environment &bull; AWS Bedrock Enabled</p>
-      </div>
-    </div>
-    <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono">
-      ● MCP Tools Active
-    </span>
-  </header>
 
-  <main class="flex-1 max-w-5xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="md:col-span-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-between text-center">
-      <div>
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Device Presence</span>
-        <h2 class="text-base font-medium text-slate-200 mt-1">Alexa+ Voice Interface</h2>
-      </div>
+<body class="min-h-screen">
+  <div class="min-h-screen md:flex">
 
-      <div id="alexaOrb" class="w-36 h-36 rounded-full bg-gradient-to-tr from-cyan-600 via-sky-400 to-blue-700 flex items-center justify-center shadow-lg shadow-cyan-500/20 transition-all duration-300">
-        <svg id="micIcon" class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m-4 0h8m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-        </svg>
-      </div>
-
-      <div class="w-full space-y-3">
-        <button id="voiceBtn" onclick="toggleVoiceRecording()" class="w-full py-3 px-4 rounded-xl font-medium text-sm bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold transition flex items-center justify-center space-x-2">
-          <span>🎤 Speak to Alexa+</span>
-        </button>
-        <p id="micStatus" class="text-xs text-slate-400">Click to speak or use quick presets below</p>
-      </div>
-
-      <div class="w-full text-left pt-4 border-t border-slate-800 space-y-2">
-        <p class="text-xs text-slate-400 font-medium">Quick Prompts:</p>
-        <button onclick="sendPrompt('Generate a quiz on Data Structures')" class="w-full text-left text-xs bg-slate-800/80 hover:bg-slate-700/80 p-2 rounded-lg text-slate-300 transition">
-          ⚡ "Generate a quiz on Data Structures"
-        </button>
-        <button onclick="sendPrompt('Analyze this bug: for i in range(len(arr)): print(arr[i+1])')" class="w-full text-left text-xs bg-slate-800/80 hover:bg-slate-700/80 p-2 rounded-lg text-slate-300 transition">
-          ⚡ "Debug array index loop"
-        </button>
-        <button onclick="sendPrompt('Create a 3-day study plan for exams')" class="w-full text-left text-xs bg-slate-800/80 hover:bg-slate-700/80 p-2 rounded-lg text-slate-300 transition">
-          ⚡ "Make 3-day milestone study plan"
-        </button>
-      </div>
-    </div>
-
-    <div class="md:col-span-2 flex flex-col space-y-4">
-      <div id="chatFeed" class="flex-1 bg-slate-900/60 border border-slate-800 rounded-2xl p-5 overflow-y-auto max-h-[460px] space-y-4">
-        <div class="flex items-start space-x-3">
-          <div class="w-7 h-7 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-xs font-bold">α</div>
-          <div class="bg-slate-800/90 border border-slate-700/50 rounded-2xl rounded-tl-none p-3.5 text-sm text-slate-200">
-            Hi! I'm OmniTutor running on the Alexa+ Model Context Protocol (MCP) simulator. Speak to me or click a prompt to test interactive quizzes, code debugging, or milestone scheduling.
-          </div>
+    <!-- Sidebar -->
+    <aside class="w-full md:w-72 panel p-5 md:min-h-screen">
+      <div class="flex items-center gap-3 mb-7">
+        <div class="h-11 w-11 rounded-2xl bg-indigo-500 flex items-center justify-center text-xl font-bold">O</div>
+        <div>
+          <h1 class="text-xl font-bold">OmniTutor AI</h1>
+          <p class="text-xs text-slate-400">Your AI Learning Companion</p>
         </div>
       </div>
 
-      <div class="flex space-x-2">
-        <input id="textInput" type="text" placeholder="Ask Alexa+ (e.g. 'Quiz me on Operating Systems' or 'Help plan my project')..." class="flex-1 bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none transition" onkeydown="if(event.key==='Enter') sendPrompt()" />
-        <button onclick="sendPrompt()" class="bg-slate-800 hover:bg-slate-700 px-5 rounded-xl font-medium text-sm text-cyan-400 border border-slate-700 transition">Send</button>
+      <button id="newChatButton" class="action primary w-full mb-6">
+        + New Chat
+      </button>
+
+      <p class="text-xs uppercase tracking-widest text-slate-500 mb-3">Learning tools</p>
+
+      <div class="space-y-2">
+        <button data-prompt="Create a quiz about Python programming"
+          class="secondary action w-full text-left">📝 Practice Quiz</button>
+
+        <button data-prompt="Create a 5 day study plan for Python programming"
+          class="secondary action w-full text-left">📅 Study Planner</button>
+
+        <button data-prompt="Explain Python functions with simple examples"
+          class="secondary action w-full text-left">💡 Learn a Topic</button>
+
+        <button data-prompt="Help me debug this Python code: for i in range(5): print(i)"
+          class="secondary action w-full text-left">💻 Code Assistant</button>
       </div>
-    </div>
-  </main>
+
+      <div class="mt-7 rounded-xl bg-slate-900 p-4 border border-slate-800">
+        <p class="text-sm font-semibold mb-2">System status</p>
+        <div class="flex items-center gap-2 text-sm">
+          <span id="statusDot" class="h-2 w-2 rounded-full bg-yellow-400"></span>
+          <span id="statusText" class="text-slate-400">Connecting...</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Backend API: localhost:8000</p>
+      </div>
+    </aside>
+
+    <!-- Main workspace -->
+    <main class="flex-1 flex flex-col min-w-0 min-h-screen">
+      <header class="px-5 md:px-8 py-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-semibold text-lg">Personal AI Tutor</h2>
+          <p class="text-sm text-slate-400">Learn, practice, and improve every day.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button id="voiceButton" class="action secondary">🎙 Voice input</button>
+          <button id="readButton" class="action secondary">🔊 Read reply</button>
+          <button id="stopSpeechButton" class="action secondary">⏹ Stop</button>
+        </div>
+      </header>
+
+      <section id="chatFeed" class="flex-1 p-5 md:p-8 space-y-5 overflow-y-auto">
+        <div class="panel rounded-2xl p-5 max-w-3xl">
+          <p class="text-indigo-300 font-semibold mb-2">Welcome to OmniTutor AI 👋</p>
+          <p class="text-slate-300 leading-relaxed">
+            I'm your AI learning companion. Ask me to explain a topic,
+            create a study plan, generate a practice quiz, or help debug your code.
+          </p>
+          <p class="text-sm text-slate-500 mt-3">
+            Choose a learning tool or type a message below.
+          </p>
+        </div>
+      </section>
+
+      <div id="typingIndicator" class="hidden px-5 md:px-8 pb-3 text-sm text-indigo-300">
+        OmniTutor is thinking...
+      </div>
+
+      <footer class="p-4 md:p-6 border-t border-slate-800">
+        <form id="chatForm" class="max-w-5xl mx-auto">
+          <label for="textInput" class="block text-sm text-slate-400 mb-2">
+            Ask OmniTutor AI
+          </label>
+
+          <div class="flex gap-3 items-end">
+            <textarea id="textInput" rows="1" required
+              placeholder="Ask a question or request a quiz..."
+              class="flex-1 resize-none rounded-xl bg-slate-900 border border-slate-700 p-4 outline-none focus:border-indigo-500"
+              style="max-height:180px;"></textarea>
+
+            <button id="sendButton" type="submit" class="action primary px-6 py-4">
+              Send ↑
+            </button>
+          </div>
+
+          <p class="text-xs text-slate-500 mt-2">
+            Enter to send · Shift + Enter for a new line
+          </p>
+        </form>
+      </footer>
+    </main>
+  </div>
 
   <script>
-    let isRecording = false;
-    let recognition = null;
+    "use strict";
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechClass();
-      recognition.continuous = false;
-      recognition.interimResults = false;
+    const API_URL = "http://127.0.0.1:8000";
 
-      recognition.onstart = () => {
-        isRecording = true;
-        document.getElementById('alexaOrb').classList.add('alexa-glow');
-        document.getElementById('micStatus').innerText = "Listening... Speak now";
+    const chatFeed = document.getElementById("chatFeed");
+    const chatForm = document.getElementById("chatForm");
+    const textInput = document.getElementById("textInput");
+    const sendButton = document.getElementById("sendButton");
+    const typingIndicator = document.getElementById("typingIndicator");
+
+    let lastReply = "";
+    let currentQuizPrompt = "Create a quiz about Python programming";
+    let requestInProgress = false;
+
+    function scrollToBottom() {
+      chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    function addMessage(text, role = "user") {
+      const wrapper = document.createElement("div");
+      wrapper.className = "max-w-4xl " + (role === "user" ? "ml-auto" : "");
+
+      const bubble = document.createElement("div");
+      bubble.className = role === "user"
+        ? "message rounded-2xl p-4 bg-indigo-600 text-white"
+        : "message panel rounded-2xl p-4 text-slate-200";
+
+      bubble.textContent = String(text ?? "");
+      wrapper.appendChild(bubble);
+      chatFeed.appendChild(wrapper);
+      scrollToBottom();
+
+      return wrapper;
+    }
+
+    function addJsonDetails(parent, data) {
+      const details = document.createElement("details");
+      details.className = "mt-4 text-sm text-slate-400";
+
+      const summary = document.createElement("summary");
+      summary.className = "cursor-pointer";
+      summary.textContent = "Developer details (JSON)";
+
+      const pre = document.createElement("pre");
+      pre.className = "mt-2 p-3 rounded-lg bg-slate-950 overflow-x-auto text-xs";
+      pre.textContent = JSON.stringify(data, null, 2);
+
+      details.append(summary, pre);
+      parent.appendChild(details);
+    }
+
+    // ---------------- INTERACTIVE QUIZ ----------------
+
+    function renderQuiz(data) {
+      const result = data.result;
+      const questions = result?.questions;
+
+      if (!Array.isArray(questions) || questions.length === 0) {
+        addMessage("The backend did not return any quiz questions.", "assistant");
+        return;
+      }
+
+      const quiz = {
+        questions,
+        answers: Array(questions.length).fill(null),
+        submitted: false
       };
 
-      recognition.onresult = (event) => {
-        const text = event.results[0][0].transcript;
-        document.getElementById('textInput').value = text;
-        sendPrompt(text);
+      const card = document.createElement("div");
+      card.className = "panel rounded-2xl p-5 md:p-6 max-w-4xl";
+
+      const title = document.createElement("h3");
+      title.className = "text-xl font-bold";
+      title.textContent = "📝 " + (result.topic || "Practice Quiz");
+
+      const subtitle = document.createElement("p");
+      subtitle.className = "text-sm text-slate-400 mt-2";
+      subtitle.textContent =
+        (result.difficulty || "Practice") + " level · " +
+        questions.length + " questions";
+
+      const progress = document.createElement("p");
+      progress.className = "text-sm text-indigo-300 mt-3";
+      progress.textContent = "Choose one answer for each question.";
+
+      const questionArea = document.createElement("div");
+      questionArea.className = "mt-5 space-y-5";
+
+      const feedback = document.createElement("div");
+      feedback.className =
+        "hidden mt-5 rounded-xl bg-slate-900 border border-slate-700 p-4";
+
+      const actions = document.createElement("div");
+      actions.className = "flex flex-wrap gap-3 mt-5";
+
+      const submitButton = document.createElement("button");
+      submitButton.type = "button";
+      submitButton.className = "action primary";
+      submitButton.textContent = "Check my score";
+
+      const retryButton = document.createElement("button");
+      retryButton.type = "button";
+      retryButton.className = "action secondary hidden";
+      retryButton.textContent = "↻ Play again";
+
+      actions.append(submitButton, retryButton);
+      card.append(title, subtitle, progress, questionArea, feedback, actions);
+      chatFeed.appendChild(card);
+
+      function drawQuestions() {
+        questionArea.replaceChildren();
+
+        questions.forEach((question, index) => {
+          const block = document.createElement("section");
+          block.className = "rounded-xl border border-slate-700 p-4";
+
+          const heading = document.createElement("h4");
+          heading.className = "font-semibold leading-relaxed";
+          heading.textContent = `${index + 1}. ${question.question || "Question"}`;
+          block.appendChild(heading);
+
+          const options = Array.isArray(question.options) ? question.options : [];
+
+          options.forEach((option, optionIndex) => {
+            const choice = document.createElement("button");
+            choice.type = "button";
+            choice.className = "choice";
+            choice.textContent =
+              String.fromCharCode(65 + optionIndex) + ". " + String(option);
+
+            if (quiz.answers[index] === optionIndex) {
+              choice.classList.add("selected");
+            }
+
+            if (quiz.submitted) {
+              choice.disabled = true;
+
+              const correctIndex = options.findIndex(
+                item => String(item).trim() === String(question.answer).trim()
+              );
+
+              if (optionIndex === correctIndex) {
+                choice.classList.add("correct");
+              } else if (
+                optionIndex === quiz.answers[index] &&
+                optionIndex !== correctIndex
+              ) {
+                choice.classList.add("incorrect");
+              }
+            }
+
+            choice.addEventListener("click", () => {
+              if (quiz.submitted) return;
+
+              quiz.answers[index] = optionIndex;
+              progress.textContent =
+                `${quiz.answers.filter(a => a !== null).length} of ${questions.length} answered.`;
+
+              progress.className = "text-sm text-indigo-300 mt-3";
+              drawQuestions();
+            });
+
+            block.appendChild(choice);
+          });
+
+          if (quiz.submitted) {
+            const correctAnswer = document.createElement("p");
+            correctAnswer.className = "text-sm text-emerald-300 mt-3";
+            correctAnswer.textContent = "Correct answer: " + String(question.answer);
+            block.appendChild(correctAnswer);
+
+            const explanation = document.createElement("p");
+            explanation.className = "text-sm text-slate-300 mt-2 leading-relaxed";
+            explanation.textContent =
+              "Explanation: " +
+              (question.explanation || "Review this topic and practise again.");
+            block.appendChild(explanation);
+          }
+
+          questionArea.appendChild(block);
+        });
+
+        scrollToBottom();
+      }
+
+      submitButton.addEventListener("click", () => {
+        if (quiz.submitted) return;
+
+        const unanswered = quiz.answers.filter(a => a === null).length;
+
+        if (unanswered > 0) {
+          progress.textContent =
+            `Please answer all questions first. ${unanswered} question(s) remain.`;
+          progress.className = "text-sm text-amber-300 mt-3";
+          return;
+        }
+
+        let score = 0;
+
+        questions.forEach((question, index) => {
+          const options = Array.isArray(question.options) ? question.options : [];
+          const selectedOption = options[quiz.answers[index]];
+
+          if (
+            selectedOption !== undefined &&
+            String(selectedOption).trim() === String(question.answer).trim()
+          ) {
+            score++;
+          }
+        });
+
+        quiz.submitted = true;
+
+        const percentage = Math.round((score / questions.length) * 100);
+
+        progress.textContent = "Quiz completed! Review your answers below.";
+        progress.className = "text-sm text-indigo-300 mt-3";
+
+        const scoreTitle = document.createElement("p");
+        scoreTitle.className = "text-2xl font-bold";
+        scoreTitle.textContent = `${score} / ${questions.length} correct`;
+
+        const scoreText = document.createElement("p");
+        scoreText.className = "text-slate-300 mt-2";
+        scoreText.textContent = `Your score: ${percentage}%`;
+
+        const scoreMessage = document.createElement("p");
+        scoreMessage.className = "text-sm text-slate-400 mt-2";
+        scoreMessage.textContent = percentage >= 80
+          ? "Excellent work! Keep challenging yourself."
+          : percentage >= 50
+            ? "Good effort! Review the explanations to improve."
+            : "Keep practising! Review the explanations and try again.";
+
+        feedback.replaceChildren(scoreTitle, scoreText, scoreMessage);
+        feedback.classList.remove("hidden");
+
+        submitButton.classList.add("hidden");
+        retryButton.classList.remove("hidden");
+
+        drawQuestions();
+      });
+
+      retryButton.addEventListener("click", () => {
+        sendPrompt(currentQuizPrompt);
+      });
+
+      drawQuestions();
+      scrollToBottom();
+    }
+
+    // ---------------- INTERACTIVE STUDY PLANNER ----------------
+
+    function renderStudyPlanner(result) {
+      const milestones = result.milestones;
+      const topicName = result.topic || "Your learning plan";
+
+      const card = document.createElement("div");
+      card.className = "panel rounded-2xl p-5 md:p-6 max-w-4xl";
+
+      const heading = document.createElement("h3");
+      heading.className = "text-xl font-bold";
+      heading.textContent = "📅 Your Personalized Study Plan";
+
+      const topic = document.createElement("p");
+      topic.className = "text-sm text-slate-400 mt-2";
+      topic.textContent = "Topic: " + topicName;
+
+      const intro = document.createElement("p");
+      intro.className = "text-sm text-slate-300 mt-4";
+      intro.textContent =
+        "Complete each day's tasks and tick the checkbox when you finish.";
+
+      const progressText = document.createElement("p");
+      progressText.className = "text-sm text-indigo-300 mt-5";
+
+      const progressTrack = document.createElement("div");
+      progressTrack.className =
+        "w-full h-2 rounded-full bg-slate-800 mt-2 overflow-hidden";
+
+      const progressBar = document.createElement("div");
+      progressBar.className = "h-full rounded-full bg-indigo-500";
+      progressBar.style.width = "0%";
+      progressTrack.appendChild(progressBar);
+
+      const taskList = document.createElement("div");
+      taskList.className = "mt-5 space-y-3";
+
+      const resetButton = document.createElement("button");
+      resetButton.type = "button";
+      resetButton.className = "action secondary mt-5";
+      resetButton.textContent = "↻ Reset progress";
+
+      const checkboxes = [];
+
+      function updateProgress() {
+        const completed = checkboxes.filter(box => box.checked).length;
+
+        const percentage = milestones.length
+          ? Math.round((completed / milestones.length) * 100)
+          : 0;
+
+        progressText.textContent =
+          `${completed} of ${milestones.length} days completed · ${percentage}%`;
+
+        progressBar.style.width = percentage + "%";
+
+        if (completed === milestones.length && milestones.length > 0) {
+          progressText.textContent =
+            `🎉 Study plan completed! ${completed} of ${milestones.length} days · 100%`;
+          progressBar.className = "h-full rounded-full bg-emerald-500";
+        } else {
+          progressBar.className = "h-full rounded-full bg-indigo-500";
+        }
+      }
+
+      milestones.forEach((milestone, index) => {
+        const dayCard = document.createElement("div");
+        dayCard.className =
+          "rounded-xl border border-slate-700 bg-slate-900 p-4";
+
+        const row = document.createElement("div");
+        row.className = "flex items-start gap-3";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "mt-1 h-5 w-5 cursor-pointer";
+        checkbox.setAttribute(
+          "aria-label",
+          `Mark day ${milestone.day || index + 1} complete`
+        );
+
+        const textArea = document.createElement("div");
+        textArea.className = "flex-1 min-w-0";
+
+        const dayTitle = document.createElement("p");
+        dayTitle.className = "font-semibold text-indigo-300";
+        dayTitle.textContent = `Day ${milestone.day || index + 1}`;
+
+        const focus = document.createElement("h4");
+        focus.className = "font-semibold text-slate-100 mt-1";
+        focus.textContent = milestone.focus || "Study tasks";
+
+        const task = document.createElement("p");
+        task.className = "text-sm text-slate-300 mt-2 leading-relaxed";
+        task.textContent = milestone.task || "Review today's topic.";
+
+        textArea.append(dayTitle, focus, task);
+        row.append(checkbox, textArea);
+        dayCard.appendChild(row);
+
+        checkbox.addEventListener("change", () => {
+          dayCard.classList.toggle("border-emerald-500", checkbox.checked);
+          dayTitle.classList.toggle("text-emerald-300", checkbox.checked);
+          updateProgress();
+        });
+
+        checkboxes.push(checkbox);
+        taskList.appendChild(dayCard);
+      });
+
+      resetButton.addEventListener("click", () => {
+        checkboxes.forEach(box => {
+          box.checked = false;
+          box.dispatchEvent(new Event("change"));
+        });
+      });
+
+      card.append(
+        heading,
+        topic,
+        intro,
+        progressText,
+        progressTrack,
+        taskList,
+        resetButton
+      );
+
+      chatFeed.appendChild(card);
+
+      lastReply = `Your ${milestones.length}-day study plan for ${topicName} is ready.`;
+
+      updateProgress();
+      scrollToBottom();
+    }
+
+    // ---------------- PYTHON CODE ANALYSIS ----------------
+
+    function renderCodeAnalysis(data) {
+      const result = data.result || {};
+      const card = document.createElement("div");
+      card.className = "panel rounded-2xl p-5 md:p-6 max-w-4xl";
+
+      const heading = document.createElement("h3");
+      heading.className = "text-xl font-bold";
+      heading.textContent = "💻 Python Code Analysis";
+
+      const subtitle = document.createElement("p");
+      subtitle.className = "text-sm text-slate-400 mt-2";
+      subtitle.textContent = "Code review and beginner-friendly explanation";
+
+      const issues = Array.isArray(result.issues_found)
+        ? result.issues_found
+        : [];
+
+      const status = document.createElement("p");
+      status.className = issues.length
+        ? "inline-block mt-4 rounded-lg px-3 py-2 text-sm bg-rose-950 text-rose-300"
+        : "inline-block mt-4 rounded-lg px-3 py-2 text-sm bg-emerald-950 text-emerald-300";
+      status.textContent = issues.length
+        ? "⚠️ Potential issues found"
+        : "✓ No issues detected";
+
+      const message = document.createElement("p");
+      message.className = "text-sm text-slate-300 mt-3 leading-relaxed";
+      message.textContent = result.message ||
+        "The code passed the basic syntax checks.";
+
+      const explanationTitle = document.createElement("h4");
+      explanationTitle.className = "font-semibold mt-6 mb-2";
+      explanationTitle.textContent = "🧠 What your code does";
+
+      const explanation = document.createElement("p");
+      explanation.className = "text-slate-300 leading-relaxed";
+      explanation.textContent = result.explanation ||
+        "No explanation was provided.";
+
+      const codeTitle = document.createElement("h4");
+      codeTitle.className = "font-semibold mt-6 mb-2";
+      codeTitle.textContent = "✨ Suggested formatted code";
+
+      const codeContainer = document.createElement("div");
+      codeContainer.className =
+        "rounded-xl border border-slate-700 bg-slate-950 p-4";
+
+      const code = document.createElement("pre");
+      code.className = "code-block text-sm text-emerald-300";
+      code.textContent = result.corrected_code || result.code || "";
+
+      const copyButton = document.createElement("button");
+      copyButton.type = "button";
+      copyButton.className = "action secondary mt-3";
+      copyButton.textContent = "📋 Copy code";
+
+      copyButton.addEventListener("click", async () => {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(code.textContent);
+          } else {
+            const temporary = document.createElement("textarea");
+            temporary.value = code.textContent;
+            temporary.style.position = "fixed";
+            temporary.style.opacity = "0";
+            document.body.appendChild(temporary);
+            temporary.select();
+
+            const copied = document.execCommand("copy");
+            temporary.remove();
+
+            if (!copied) throw new Error("Copy failed");
+          }
+
+          copyButton.textContent = "✓ Copied!";
+        } catch {
+          copyButton.textContent = "Could not copy — select code manually";
+        }
+
+        setTimeout(() => {
+          copyButton.textContent = "📋 Copy code";
+        }, 2000);
+      });
+
+      codeContainer.append(code, copyButton);
+
+      const suggestionsTitle = document.createElement("h4");
+      suggestionsTitle.className = "font-semibold mt-6 mb-2";
+      suggestionsTitle.textContent = "💡 Suggestions to improve";
+
+      const suggestionsList = document.createElement("ul");
+      suggestionsList.className =
+        "list-disc pl-5 space-y-2 text-sm text-slate-300";
+
+      const suggestions = Array.isArray(result.suggestions)
+        ? result.suggestions
+        : [];
+
+      if (suggestions.length === 0) {
+        const item = document.createElement("li");
+        item.textContent =
+          "Keep practising and test your code with different inputs.";
+        suggestionsList.appendChild(item);
+      } else {
+        suggestions.forEach(suggestion => {
+          const item = document.createElement("li");
+          item.textContent = String(suggestion);
+          suggestionsList.appendChild(item);
+        });
+      }
+
+      card.append(
+        heading,
+        subtitle,
+        status,
+        message,
+        explanationTitle,
+        explanation,
+        codeTitle,
+        codeContainer,
+        suggestionsTitle,
+        suggestionsList
+      );
+
+      if (issues.length > 0) {
+        const issuesTitle = document.createElement("h4");
+        issuesTitle.className = "font-semibold text-rose-300 mt-6 mb-2";
+        issuesTitle.textContent = "Issues found";
+
+        const issuesList = document.createElement("ul");
+        issuesList.className =
+          "list-disc pl-5 space-y-2 text-sm text-rose-200";
+
+        issues.forEach(issue => {
+          const item = document.createElement("li");
+          item.textContent = String(issue);
+          issuesList.appendChild(item);
+        });
+
+        card.append(issuesTitle, issuesList);
+      }
+
+      chatFeed.appendChild(card);
+
+      lastReply =
+        "Python Code Analysis. " + explanation.textContent +
+        " Suggested code: " + code.textContent;
+
+      scrollToBottom();
+    }
+
+    // ---------------- RESPONSE ROUTING ----------------
+
+    function addAssistantResponse(data) {
+      if (
+        data.tool === "generate_diagnostic_quiz" &&
+        Array.isArray(data.result?.questions)
+      ) {
+        lastReply = "Your " + (data.result.topic || "practice") + " quiz is ready.";
+        renderQuiz(data);
+        return;
+      }
+
+      if (
+        data.tool === "generate_study_milestones" &&
+        Array.isArray(data.result?.milestones)
+      ) {
+        renderStudyPlanner(data.result);
+        return;
+      }
+
+      if (
+        data.tool === "analyze_code_snippet" &&
+        data.result &&
+        typeof data.result === "object"
+      ) {
+        renderCodeAnalysis(data);
+        return;
+      }
+
+      const answer = data.answer || "I couldn't generate a response.";
+      const wrapper = addMessage(answer, "assistant");
+
+      lastReply = answer;
+
+      if (data.tool) {
+        const label = document.createElement("p");
+        label.className = "text-xs text-indigo-300 mt-3";
+        label.textContent = "Tool used: " + data.tool;
+        wrapper.appendChild(label);
+      }
+
+      // Keep raw JSON hidden for ordinary responses.
+      // The structured code-analysis card displays its own useful details.
+      if (data.result && data.tool !== "analyze_code_snippet") {
+        addJsonDetails(wrapper, data.result);
+      }
+
+      scrollToBottom();
+    }
+
+    // ---------------- BACKEND CONNECTION ----------------
+
+    async function checkBackend() {
+      const dot = document.getElementById("statusDot");
+      const statusText = document.getElementById("statusText");
+
+      try {
+        const response = await fetch(`${API_URL}/health`);
+
+        if (!response.ok) {
+          throw new Error("Backend unavailable");
+        }
+
+        dot.className = "h-2 w-2 rounded-full bg-emerald-400";
+        statusText.textContent = "Backend online";
+        statusText.className = "text-emerald-300";
+      } catch {
+        dot.className = "h-2 w-2 rounded-full bg-rose-400";
+        statusText.textContent = "Backend offline";
+        statusText.className = "text-rose-300";
+      }
+    }
+
+    async function sendPrompt(prompt) {
+      const message = String(prompt || "").trim();
+
+      if (!message || requestInProgress) return;
+
+      if (/quiz|test me|practice test|mock test|exam questions/i.test(message)) {
+        currentQuizPrompt = message;
+      }
+
+      requestInProgress = true;
+      sendButton.disabled = true;
+      typingIndicator.classList.remove("hidden");
+
+      addMessage(message, "user");
+
+      textInput.value = "";
+      textInput.style.height = "auto";
+
+      try {
+        const response = await fetch(`${API_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.message || "The request failed.");
+        }
+
+        addAssistantResponse(data);
+      } catch (error) {
+        addMessage(
+          "I couldn't connect to the backend. Make sure the FastAPI server is running at " +
+          API_URL + ". Error: " + error.message,
+          "assistant"
+        );
+      } finally {
+        requestInProgress = false;
+        sendButton.disabled = false;
+        typingIndicator.classList.add("hidden");
+        textInput.focus();
+      }
+    }
+
+    // ---------------- CHAT INPUT ----------------
+
+    chatForm.addEventListener("submit", event => {
+      event.preventDefault();
+      sendPrompt(textInput.value);
+    });
+
+    textInput.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        chatForm.requestSubmit();
+      }
+    });
+
+    textInput.addEventListener("input", () => {
+      textInput.style.height = "auto";
+      textInput.style.height = Math.min(textInput.scrollHeight, 180) + "px";
+    });
+
+    // ---------------- NEW CHAT ----------------
+
+    document.getElementById("newChatButton").addEventListener("click", () => {
+      chatFeed.replaceChildren();
+      lastReply = "";
+
+      const welcome = document.createElement("div");
+      welcome.className = "panel rounded-2xl p-5 max-w-3xl";
+
+      const heading = document.createElement("p");
+      heading.className = "text-indigo-300 font-semibold mb-2";
+      heading.textContent = "New learning session ✨";
+
+      const message = document.createElement("p");
+      message.className = "text-slate-300";
+      message.textContent =
+        "What would you like to learn today? Ask a question or choose a learning tool.";
+
+      welcome.append(heading, message);
+      chatFeed.appendChild(welcome);
+
+      textInput.value = "";
+      textInput.style.height = "auto";
+      scrollToBottom();
+    });
+
+    document.querySelectorAll("[data-prompt]").forEach(button => {
+      button.addEventListener("click", () => {
+        sendPrompt(button.dataset.prompt);
+      });
+    });
+
+    // ---------------- TEXT-TO-SPEECH ----------------
+
+    document.getElementById("readButton").addEventListener("click", () => {
+      if (!lastReply) {
+        addMessage("Send a message first, then use Read reply.", "assistant");
+        return;
+      }
+
+      if (!("speechSynthesis" in window)) {
+        addMessage("Speech playback is not supported in this browser.", "assistant");
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(
+        new SpeechSynthesisUtterance(lastReply)
+      );
+    });
+
+    document.getElementById("stopSpeechButton").addEventListener("click", () => {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    });
+
+    // ---------------- VOICE INPUT ----------------
+
+    document.getElementById("voiceButton").addEventListener("click", () => {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        addMessage(
+          "Voice input is not supported in this browser. Try Chrome.",
+          "assistant"
+        );
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-IN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      const voiceButton = document.getElementById("voiceButton");
+
+      recognition.onstart = () => {
+        voiceButton.textContent = "🎙 Listening...";
+      };
+
+      recognition.onresult = event => {
+        textInput.value = event.results[0][0].transcript;
+        textInput.dispatchEvent(new Event("input"));
+      };
+
+      recognition.onerror = event => {
+        addMessage("Voice input error: " + event.error, "assistant");
       };
 
       recognition.onend = () => {
-        isRecording = false;
-        document.getElementById('alexaOrb').classList.remove('alexa-glow');
-        document.getElementById('micStatus').innerText = "Click to speak or use quick presets below";
+        voiceButton.textContent = "🎙 Voice input";
       };
-    }
 
-    function toggleVoiceRecording() {
-      if (!recognition) {
-        alert("Speech Recognition not supported in this browser. Please use Chrome or type in the input box.");
-        return;
-      }
-      if (isRecording) {
-        recognition.stop();
-      } else {
-        recognition.start();
-      }
-    }
+      recognition.start();
+    });
 
-    function speakAlexa(text) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.05;
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
-    async function sendPrompt(customText) {
-      const inputEl = document.getElementById('textInput');
-      const text = customText || inputEl.value.trim();
-      if (!text) return;
-      inputEl.value = '';
-
-      const chatFeed = document.getElementById('chatFeed');
-      chatFeed.innerHTML += `
-        <div class="flex items-start justify-end space-x-2">
-          <div class="bg-cyan-600/30 border border-cyan-500/40 rounded-2xl rounded-tr-none p-3 text-sm text-cyan-100 max-w-[85%]">
-            ${text}
-          </div>
-        </div>
-      `;
-      chatFeed.scrollTop = chatFeed.scrollHeight;
-
-      const loadingId = 'loading-' + Date.now();
-      chatFeed.innerHTML += `
-        <div id="${loadingId}" class="flex items-center space-x-2 text-xs text-slate-400">
-          <div class="w-2 h-2 rounded-full bg-cyan-400 animate-bounce"></div>
-          <span>Alexa+ agent evaluating MCP tools via Amazon Bedrock...</span>
-        </div>
-      `;
-      chatFeed.scrollTop = chatFeed.scrollHeight;
-
-      setTimeout(() => {
-        const loader = document.getElementById(loadingId);
-        if (loader) loader.remove();
-
-        let toolUsed = null;
-        let toolData = null;
-        let voiceResponse = "";
-        const lower = text.toLowerCase();
-
-        if (lower.includes("quiz") || lower.includes("test") || lower.includes("question") || lower.includes("exam") || lower.includes("data")) {
-          toolUsed = "generate_diagnostic_quiz";
-          toolData = {
-            status: "success",
-            tool: "generate_diagnostic_quiz",
-            topic: "Data Structures & Algorithms",
-            difficulty: "intermediate",
-            questions: [
-              {
-                id: 1,
-                question: "What primary trade-off differentiates depth-first vs breadth-first traversal?",
-                options: ["Memory consumption (stack vs queue)", "Time complexity asymptotic bounds", "Compilation overhead"],
-                answer: "Memory consumption (stack vs queue)"
-              },
-              {
-                id: 2,
-                question: "Which core property ensures balanced height in an AVL tree?",
-                options: ["Balance factor in {-1, 0, 1}", "Unbounded recursion", "Greedy path compression"],
-                answer: "Balance factor in {-1, 0, 1}"
-              }
-            ]
-          };
-          voiceResponse = "I have invoked the MCP diagnostic quiz tool on Amazon Bedrock. Here are two interactive questions on Data Structures to test your knowledge!";
-        } else if (lower.includes("bug") || lower.includes("code") || lower.includes("debug") || lower.includes("loop") || lower.includes("analyze")) {
-          toolUsed = "analyze_code_snippet";
-          toolData = {
-            status: "success",
-            tool: "analyze_code_snippet",
-            language: "Python",
-            issues_found: [
-              { severity: "High", line: 1, description: "IndexError: list index out of range when accessing arr[i+1] on the final iteration." },
-              { severity: "Optimization", line: 1, description: "Use range(len(arr) - 1) or itertools.pairwise for safe adjacent traversal." }
-            ],
-            suggested_fix: "for i in range(len(arr) - 1):\n    print(arr[i + 1])"
-          };
-          voiceResponse = "I analyzed your code snippet with the MCP code analyzer. You have an off-by-one boundary error at index i plus 1. I've displayed the corrected loop on your screen.";
-        } else if (lower.includes("plan") || lower.includes("schedule") || lower.includes("milestone") || lower.includes("day") || lower.includes("study")) {
-          toolUsed = "generate_study_milestones";
-          toolData = {
-            status: "success",
-            tool: "generate_study_milestones",
-            timeline_days: 3,
-            milestones: [
-              { day: 1, focus: "Core Foundations & Architecture", task: "Review key algorithms, complexity bounds, and system design patterns." },
-              { day: 2, focus: "Active Problem Solving", task: "Complete 5 timed coding drills and verify edge-case handling." },
-              { day: 3, focus: "Mock Synthesis & Review", task: "Run full diagnostic quiz and review flagged error patterns." }
-            ]
-          };
-          voiceResponse = "I have created a 3-day milestone study schedule using the MCP planner tool. You can review your daily breakdown right on the dashboard.";
-        } else {
-          toolUsed = "alexa_conversational_router";
-          toolData = {
-            status: "routed",
-            model: "anthropic.claude-3-haiku-20240307-v1:0",
-            intent: "general_tutoring_inquiry"
-          };
-          voiceResponse = "Hello Karthik! I am OmniTutor running on Alexa+. Ask me to generate a quiz on Data Structures, debug a Python loop, or build a 3-day study plan!";
-        }
-
-        const toolBadge = `<div class="mt-2 text-xs font-mono inline-block px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">⚙️ MCP Tool Executed: ${toolUsed}</div>`;
-        const toolDetails = `<pre class="mt-2 text-xs bg-slate-950 p-3 rounded-lg overflow-x-auto text-emerald-400 border border-slate-800">${JSON.stringify(toolData, null, 2)}</pre>`;
-
-        chatFeed.innerHTML += `
-          <div class="flex items-start space-x-3">
-            <div class="w-7 h-7 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 text-xs font-bold">α</div>
-            <div class="bg-slate-800/90 border border-slate-700/50 rounded-2xl rounded-tl-none p-3.5 text-sm text-slate-200 w-full">
-              <p>${voiceResponse}</p>
-              ${toolBadge}
-              ${toolDetails}
-              <div class="mt-2 text-[10px] text-slate-400">Provider: Amazon Bedrock Runtime (boto3) &bull; Alexa+ MCP Agent</div>
-            </div>
-          </div>
-        `;
-        chatFeed.scrollTop = chatFeed.scrollHeight;
-        speakAlexa(voiceResponse);
-      }, 650);
-    }
+    checkBackend();
+    setInterval(checkBackend, 10000);
   </script>
 </body>
 </html>
